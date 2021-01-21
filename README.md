@@ -1,4 +1,4 @@
-# Retrieve Top News from Refinitiv Data Platform using RDP Library for .NET
+# How to retrieve RDP Top News using RDP Library for .NET
 
 ## Introduction
 
@@ -156,7 +156,7 @@ o html
 
 The extension has a higher priority than the header. It means that if, for example, the accept header equals "text/html", but story ID is sent as sampleStory.json, the result will be in JSON format.
 
-You can find additional details about the stories operation from [RDP News Service User and Design Guide](https://my.refinitiv.com/content/dam/myrefinitiv/products/11528/en/UserGuides/604929.pdf), and we also have [article](https://developers.refinitiv.com/en/article-catalog/article/build-news-headlines-mobile-app-using-flutter-and-rdp-part1) which provide a sample mobile app to retrieve the news story using the stories operation.
+You can find additional details about the stories operation from [RDP News Service User and Design Guide](https://my.refinitiv.com/content/dam/myrefinitiv/products/11528/en/UserGuides/604929.pdf). We also have [article](https://developers.refinitiv.com/en/article-catalog/article/build-news-headlines-mobile-app-using-flutter-and-rdp-part1)  that provides a sample mobile app to retrieve the news story using the stories operation.
 
 ### Images operation
 
@@ -246,7 +246,7 @@ These classes were created based on the JSON message structure mentioned in the 
   var data = topnewsPkgResp.Data.Raw["data"]?.ToObject<IList<TopNewsPackage>>();
 ```
 
-We will print top level Package Name and the number of underlying pages to verify the codes.
+We will print the top-level Package Name and the number of underlying pages to verify the codes.
 
 ```csharp
 if (data != null)
@@ -265,7 +265,7 @@ if (data != null)
 }
 ```
 
-Below is the sample output. It will show top level Package name and number of sub-pages with its name and TopNewsId. We need to use the TopNewsId with the Headlines operation as described earlier.
+Below is the sample output. It will show the top-level Package name and number of sub-pages with its name and TopNewsId. We need to use the TopNewsId with the Headlines operation as described earlier.
 
 ```bash
 Package Name:Main Number of Pages: 3
@@ -378,7 +378,7 @@ class HeadlineInfo
     }
 ```
 
-Just like the Top News operation, we need to deserialize the JSON message under the "data" section to the TopNewsData object using the following codes.
+Like the Top News operation, we need to deserialize the JSON message under the "data" section to the TopNewsData object using the following codes.
 
 ```csharp
  var headlinesList = topNewsHeadlinesResp.Data.Raw["data"]?.ToObject<IList<TopNewsData>>();
@@ -424,11 +424,11 @@ Let compare the result with the screenshot from the Top News app again, you will
 
 You can access other information from the TopNewsData object's properties rather than parsing the field from the JSON message. It is quite easy to bind the property from the TopNewsData class to the GUI on the WPF and Web application when you use the class.
 
-### Get a Headlines images and Story content
+### Get Headlines images and Story content.
 
 Fortunately, RDP Library for .NET provides an interface to retrieve relevant news images and stories. So the user doesn't need to use the Endpoint class to retrieve the data and parse the content from the JSON message. It requires the storyId to retrieve the news story and the top news image id to get a photo associated with the headline.
 
-#### Get news story using RDP.NET interface
+#### Get news story using the RDP.NET interface
 
 You can use the following snippet of codes to retrieve the news story. The class has IsSucess property you can use to verify if the operation is successful or a failure. If it's failed, a status returned from the server is shown in the console output.
 
@@ -583,8 +583,8 @@ private static string images_save_path = @"c:\tmp\images\";
 
 ```
 
-Then start the app using Debug=> Start Debuggin or Start Without Debugging.
-Or you can run the app using __dotnet__ command under the same folder as project file.
+Then start the app using Debug=> Start Debugging or Start Without Debugging.
+Or you can run the app using the __dotnet__ command under the same folder as the project file.
 
 ```bash
 dotnet run
