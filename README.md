@@ -219,7 +219,7 @@ Once the session is open, we will use the session object with the Endpoint class
 
 ### Using Endpoint interface to request Top News packages
 
-Since RDP Library for .NET does not provide an interface and data structure to retrieve Top News packages' hierarchy, we will instead use the Endpoint class. It was designed for sending a request message and handle a response message based on the URI we pass to the function. Users don't need to handle an HTTP request header and manage the Access Token when using the Endpoint class.
+Currently, RDP Library for .NET does not provide an interface and data structure to retrieve Top News packages' hierarchy directly; therefore, we will instead use the Endpoint class provided by the RDP Library for .NET. It was designed for sending a request message and handle a response message based on the URI we pass to the function. Users don't need to handle an HTTP request header and manage the Access Token when using the Endpoint class.
 
 Before we start using the Endpoint class, I will create a TopNewsPackage and TopNewsPackageData class that is the model and data structure to keep the top news package's hierarchy.
 

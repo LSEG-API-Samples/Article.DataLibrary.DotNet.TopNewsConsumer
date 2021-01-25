@@ -10,17 +10,18 @@ namespace TopNewsConsole
 {
     class Program
     {
+        
         #region RDPCredential
         // Please set RDP Username, Password and AppKey here.
         static string UserName = "<RDP Username>";
         static string Password = "<RDP Password>";
         static string AppKey = "<APP Key>";
         #endregion
-
+        
         private static string TopNewsEndpoint = "https://api.refinitiv.com/data/news/v1/top-news";
 
         // b_ShowNewStory set to true to get story associated with top news headline and print to console output
-        private static bool b_ShowNewsStory = false;
+        private static bool b_ShowNewsStory =false;
 
         // b_SaveImagesToFile set to true to get photo associated with top news headline and save photo to images_save_path
         private static bool b_SaveImagesToFile = false;
@@ -69,6 +70,7 @@ namespace TopNewsConsole
                     if (!package.Pages!.Any()) continue;
                     foreach (var subPackage in package.Pages)
                     {
+                        Console.WriteLine("\n");
                         // Retrieve Top News Headlines for each underlying Page using specified TopNewsId
                         #region GetTopNewsHedlines
 
@@ -83,7 +85,7 @@ namespace TopNewsConsole
                         foreach (var topHeadline in headlinesList)
                         {
                             Console.WriteLine(
-                                $"\t\t\t{topHeadline.text} storyId:[{topHeadline.storyId}] imageId:[{topHeadline.image?.id}]");
+                                $"\t\t\t> {topHeadline.text} storyId:[{topHeadline.storyId}] imageId:[{topHeadline.image?.id}]");
 
                             #region GetImages
 
@@ -112,7 +114,6 @@ namespace TopNewsConsole
                                     }
                                 }
                             }
-
                             #endregion
                             #region  GetStory
 
@@ -138,6 +139,7 @@ namespace TopNewsConsole
                         }
                         #endregion
                     }
+                    Console.WriteLine("\n");
                 }
             }
 
