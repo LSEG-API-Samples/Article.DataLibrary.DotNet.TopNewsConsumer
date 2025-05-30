@@ -1,24 +1,25 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Refinitiv.DataPlatform.Core;
-using Refinitiv.DataPlatform.Content.News;
-using Refinitiv.DataPlatform.Delivery.Request;
+using LSEG.Data.Core;
+using LSEG.Data.Content.News;
+
+
 
 namespace TopNewsConsole
 {
     class Program
     {
         
-        #region RDPCredential
-        // Please set RDP Username, Password and AppKey here.
-        static string UserName = "<RDP Username>";
-        static string Password = "<RDP Password>";
-        static string AppKey = "<APP Key>";
+        #region Credential
+        // Please set Username, Password and AppKey here.
+        
+        static string UserName = Environment.GetEnvironmentVariable("RDP_USERNAME");
+        static string Password = Environment.GetEnvironmentVariable("RDP_PASSWORD");
+        static string AppKey = Environment.GetEnvironmentVariable("APP_KEY");
         #endregion
         
-        private static string TopNewsEndpoint = "https://api.refinitiv.com/data/news/v1/top-news";
+        
 
         // b_ShowNewStory set to true to get story associated with top news headline and print to console output
         private static bool b_ShowNewsStory =false;
@@ -32,13 +33,14 @@ namespace TopNewsConsole
         {
             #region SessionManagement
 
-            var session = CoreFactory.CreateSession(new PlatformSession.Params()
-                .WithOAuthGrantType(new GrantPassword().UserName(UserName)
-                    .Password(Password))
-                .AppKey(AppKey)
-                .WithTakeSignonControl(true)
+            var session = PlatformSession.Definition().AppKey(AppKey)
+                .OAuthGrantType(new GrantPassword().UserName(UserName).Password(Password))
+                .TakeSignonControl(true)
+                .GetSession()
                 .OnState((s, state, msg) => Console.WriteLine($"{DateTime.Now}:{msg}. (State: {state})"))
-                .OnEvent((s, eventCode, msg) => Console.WriteLine($"{DateTime.Now}:{msg}. (Event: {eventCode})")));
+                .OnEvent((s, eventCode, msg) => Console.WriteLine($"{DateTime.Now}:{msg}. (Event: {eventCode})"));
+
+           
             session.Open();
 
             if (session.OpenState == Session.State.Opened) 
@@ -52,65 +54,67 @@ namespace TopNewsConsole
                 Console.WriteLine("Session is now closed");
                 return;
             }
-            
+
             #endregion
 
 
             #region GetTopNewsPackage
-            // Call Endpoint.SendRequestAsync to get TopNews from TopNewsEndpoint
-            var topNewsPkgResp = Endpoint.SendRequestAsync(session, new Uri(TopNewsEndpoint)).GetAwaiter().GetResult();
 
-            // Parse TopNewsPackage from data element
-            var data = topNewsPkgResp.Data.Raw["data"]?.ToObject<IList<TopNewsPackage>>();
-            if (data != null)
+            var topNewsPkgResp = TopNews.Definition().GetData();
+
+           
+          
+            
+            if (topNewsPkgResp != null)
             {
-                foreach (var package in data)
+                foreach (var package in topNewsPkgResp.Data.Categories)
                 {
-                    Console.WriteLine($"Package Name:{package.Name} Number of Pages: {package.Pages?.Count}");
-                    if (!package.Pages!.Any()) continue;
-                    foreach (var subPackage in package.Pages)
+                    Console.WriteLine($"Package Name:{package.Key} Number of Pages: {package.Value.Count}");
+                    if (!package.Value.Any()) continue;
+                    foreach (var subPackage in package.Value)
                     {
                         Console.WriteLine("\n");
                         // Retrieve Top News Headlines for each underlying Page using specified TopNewsId
-                        #region GetTopNewsHedlines
+                        #region GetTopNewsHeadlines
 
-                        Console.WriteLine($"\t\t{subPackage.Name} [{subPackage.TopNewsId}]");
-                        var topNewsHeadlinesResp = Endpoint.SendRequestAsync(session,
-                                new Uri($"{TopNewsEndpoint}/{subPackage.TopNewsId}"))
-                            .GetAwaiter().GetResult();
+                        Console.WriteLine($"\t\t{subPackage.Page} [{subPackage.TopNewsID}]");
 
-                        var headlinesList = topNewsHeadlinesResp.Data.Raw["data"]?.ToObject<IList<TopNewsData>>();
+                        var topNewsHeadlinesResp = TopNewsHeadlines.Definition(subPackage.TopNewsID).GetData();
+                        
+
+
+                        var headlinesList = topNewsHeadlinesResp.Data.Headlines;
                         if (!headlinesList.Any()) continue;
 
                         foreach (var topHeadline in headlinesList)
                         {
                             Console.WriteLine(
-                                $"\t\t\t> {topHeadline.text} storyId:[{topHeadline.storyId}] imageId:[{topHeadline.image?.id}]");
+                                $"\t\t\t> {topHeadline.Text} storyId:[{topHeadline.StoryId}] imageId:[{topHeadline.ImageId}]");
 
                             #region GetImages
 
                             if (b_SaveImagesToFile)
                             {
-                                if (topHeadline.image != null && !string.IsNullOrEmpty(topHeadline.image.id.Trim()))
+                                if (topHeadline.ImageId != null && !string.IsNullOrEmpty(topHeadline.ImageId.Trim()))
                                 {
 
                                     // Retrieve Headlines Images and save it to images_save_path
-                                    var image = Image.Definition(topHeadline.image?.id).Rendition("thumbnail")
+                                    var image = Image.Definition(topHeadline.ImageId).Rendition("thumbnail")
                                         .GetData();
                                     if (image.IsSuccess)
                                     {
                                         Console.WriteLine(
-                                            $"\t\t\tGet Image Id: [{topHeadline.image?.id}] Image represented as a: {image.Data.Image} of length: {image.Data.Image.Length} bytes.\n");
+                                            $"\t\t\tGet Image Id: [{topHeadline.ImageId}] Image represented as a: {image.Data.Image} of length: {image.Data.Image.Length} bytes.\n");
 
                                         using var ms = new MemoryStream(image.Data.Image);
-                                        using var fs = new FileStream($"{images_save_path}{topHeadline.image.id}.jpg",
+                                        using var fs = new FileStream($"{images_save_path}{topHeadline.ImageId}.jpg",
                                             FileMode.Create);
                                         ms.WriteTo(fs);
                                     }
                                     else
                                     {
                                         Console.WriteLine(
-                                            $"Failed to retrieve image ID: {topHeadline.image?.id}\n{image.Status}");
+                                            $"Failed to retrieve image ID: {topHeadline.ImageId}\n{image.HttpStatus}");
                                     }
                                 }
                             }
@@ -120,12 +124,12 @@ namespace TopNewsConsole
                             if (b_ShowNewsStory)
                             {
                                 // Retrieve News Story using Story class. It required storyId from the Top News headline.
-                                if (!string.IsNullOrEmpty(topHeadline.storyId))
+                                if (!string.IsNullOrEmpty(topHeadline.StoryId))
                                 {
-                                    var story = Story.Definition(topHeadline.storyId).GetData();
+                                    var story = Story.Definition(topHeadline.StoryId).GetData();
                                     Console.WriteLine(story.IsSuccess
-                                        ? $"\n\t\t\t Retrieving Story Id:{topHeadline.storyId}\n{story.Data.NewsStory}\n"
-                                        : $"\n\t\t\tProblem retrieving the story: {story.Status}\n");
+                                        ? $"\n\t\t\t Retrieving Story Id:{topHeadline.StoryId}\n{story.Data.NewsStory}\n"
+                                        : $"\n\t\t\tProblem retrieving the story: {story.HttpStatus}\n");
                                 }
                                 else
                                 {
@@ -148,45 +152,5 @@ namespace TopNewsConsole
             Console.ReadKey();
         }
     }
-
-    internal class TopNewsData
-    {
-        public string text { get; set; }
-        public string dateLine { get; set; }
-        public string snippet { get; set; }
-        public TopNewsImages image { get; set; }
-        public string versionCreated { get; set; }
-        public string storyId { get; set; }
-        public IList<HeadlineInfo> relatedHeadlines { get; set; }
-    }
-    internal class TopNewsImages
-    {
-        public string byLine { get; set; }
-        public string text { get; set; }
-        public string smallId { get; set; }
-        public string id { get; set; }
-    }
-
-    internal class HeadlineInfo
-    {
-        public string text { get; set; }
-        public string versionCreated { get; set; }
-        public string dateLine { get; set; }
-        public string snippet { get; set; }
-        public string webUrl { get; set; }
-        public string documentType { get; set; }
-        public string storyId { get; set; }
-    }
-    internal class TopNewsPackage
-    {
-        public string Name { get; set; }
-        public IList<TopNewsPackageData> Pages { get; set; }
-    }
-    internal class TopNewsPackageData
-    {
-        public string Name { get; set; }
-        public string RevisionId { get; set; }
-        public string RevisionDate { get; set; }
-        public string TopNewsId { get; set; }
-    }
+  
 }
